@@ -63,3 +63,38 @@ class PriorNetwork(nn.Module):
         logits = self.forward(h)
 
         return torch.distributions.Categorical(logits=logits)
+
+
+class PosteriorNetwork(nn.Module):
+    def __init__(
+        self,
+        deter_dim: int = 256,
+        embed_dim: int = 128,
+        hidden_dim: int = 128,
+        stoch_dim: int = 32,
+    ):
+        super().__init__()
+
+        self.stoch_dim = stoch_dim
+
+        input_dim = deter_dim + embed_dim
+
+        self.network = nn.Sequential(
+            nn.Linear(input_dim, hidden_dim),
+            nn.ELU(),
+
+            nn.Linear(hidden_dim, hidden_dim),
+            nn.ELU(),
+
+            nn.Linear(hidden_dim, stoch_dim),
+        )
+
+    def forward(self, h: torch.Tensor, embed: torch.Tensor) -> torch.Tensor:
+        x = torch.cat([h, embed], dim=-1)
+
+        return self.network(x)
+
+    def get_dist(self, h: torch.Tensor, embed: torch.Tensor) -> torch.Tensor:
+        logits = self.forward(h, embed)
+
+        return torch.distributions.Categorical(logits=logits)
