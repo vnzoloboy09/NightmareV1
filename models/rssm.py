@@ -244,3 +244,52 @@ class RSSM(nn.Module):
         posterior_logits = torch.stack(posterior_logits_list, dim=1)
 
         return post_states, prior_logits, posterior_logits
+
+    def imagine(self, start_state: RSSMState, actions):
+        batch_size, horizon = actions.shape[:2]
+
+        if actions.ndim == 2:
+            actions = torch.nn.functional.one_hot(
+            actions.long(),
+            num_classes=self.action_dim,
+        ).float()
+
+        if actions.shape != (batch_size, horizon, self.action_dim):
+            raise ValueError("Invalid action shape")
+
+        state = RSSMState(
+            deter=start_state.deter,
+            stoch=start_state.stoch
+        )
+
+        deter_states = [state.deter]
+        stoch_states = [state.stoch]
+        prior_logits_list = []
+
+        for t in range(horizon):
+            next_deter = self.dynamics(
+                prev_z=state.stoch,
+                prev_action=actions[:, t],
+                prevh=state.deter
+            )
+
+            prior_logits = self.prior(next_deter)
+            next_stoch = self.get_stoch(prior_logits)
+
+            state = RSSMState(
+                deter=next_deter,
+                stoch=next_stoch
+            )
+
+            deter_states.append(next_deter)
+            stoch_states.append(next_stoch)
+            prior_logits_list.append(prior_logits)
+
+        imagined_states = RSSMState(
+            deter=torch.stack(deter_states, dim=1),
+            stoch=torch.stack(stoch_states, dim=1)
+        )
+
+        prior_logits = torch.stack(prior_logits_list, dim=1)
+
+        return imagined_states, prior_logits
