@@ -33,7 +33,7 @@ class WorldModelTrainer:
 
         output = self.world_model.observe(obs, actions)
 
-        losses = world_model_loss(output, obs, actions)
+        losses = world_model_loss(output, obs, rewards)
 
         losses["total_loss"].backward()
 
