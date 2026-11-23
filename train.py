@@ -34,16 +34,19 @@ def train_world_model(
                     sequence_length=sequence_length
                 )
             except ValueError:
-                print("ahh fuck")
+                print(
+                    f"Episode {episode_idx + 1}: "
+                    "Not enough data to sample. Skipping updates."
+                )
                 break
 
-            metrix = trainer.train_step(
+            metrics = trainer.train_step(
                 obs=batch["obs"],
                 actions=batch["actions"],
                 rewards=batch["rewards"]
             )
 
-            episode_losses.append(metrix["total_loss"])
+            episode_losses.append(metrics["total_loss"])
             num_updates += 1
 
         if episode_losses:
