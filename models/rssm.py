@@ -270,7 +270,7 @@ class RSSM(nn.Module):
             next_deter = self.dynamics(
                 prev_z=state.stoch,
                 prev_action=actions[:, t],
-                prevh=state.deter
+                prev_h=state.deter
             )
 
             prior_logits = self.prior(next_deter)
