@@ -12,11 +12,23 @@ def reward_loss(predicted_rewards, rewards):
     return torch.nn.functional.mse_loss(predicted_rewards, rewards)
 
 
-def kl_loss(prior_logits, posterior_logits):
+def kl_loss(prior_logits, posterior_logits, balance=0.8, free_nats=1.0):
     prior_dist = Categorical(logits=prior_logits)
     posterior_dist = Categorical(logits=posterior_logits)
 
-    kl = kl_divergence(posterior_dist, prior_dist)
+    dynamics_kl = kl_divergence(
+        Categorical(logits=posterior_logits.detach()),
+        prior_dist
+    )
+
+    representation_kl = kl_divergence(
+        posterior_dist,
+        Categorical(logits=prior_logits.detach())
+    )
+
+    kl = balance * dynamics_kl + (1.0 - balance) * representation_kl
+
+    kl = torch.clamp(kl, min=free_nats)
 
     return kl.mean()
 
